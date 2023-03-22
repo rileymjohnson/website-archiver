@@ -398,7 +398,28 @@ class Archiver:
         template_file = self.get_url_template_html_file(url)
 
         with open(template_file, 'r', encoding='utf-8') as f:
-            template = HTMLTemplate(f.read())
+            html = HTMLParser(f.read())
+
+        for tag in html.css('*[data-template-id]'):
+            if tag.tag == 'link':
+                file = self.template_id_to_file(tag.attrs['data-template-id'])
+                css = file.read_text(encoding='utf-8')
+
+                attrs = {}
+
+                if 'type' in tag.attrs:
+                    attrs['type'] = tag.attrs['type']
+                if 'media' in tag.attrs:
+                    attrs['media'] = tag.attrs['media']
+
+                update_node(
+                    tag,
+                    tag='style',
+                    contents=css,
+                    attrs=attrs
+                )
+
+        template = HTMLTemplate(html.html)
 
         rendered_template = template.substitute(
             self.get_template_identifiers(template, metadata)
